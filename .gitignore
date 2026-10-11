@@ -1,0 +1,26 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Build and profiling artifacts
+/.bin/
+/server
+/server.exe
+*.exe
+*.test
+*.pprof
+/artifacts/
+/coverage.out
+
+# Runtime image and database data
+/data/
+/uploads/
+/results/
+/tmp/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
