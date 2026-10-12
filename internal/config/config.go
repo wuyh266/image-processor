@@ -18,9 +18,10 @@ type rawConfig struct {
 		ShutdownTimeout   string `yaml:"shutdown_timeout"`
 	} `yaml:"server"`
 	Process struct {
-		Timeout       string `yaml:"timeout"`
-		MaxConcurrent int    `yaml:"max_concurrent"`
-		MaxFileSize   int64  `yaml:"max_file_size"`
+		Timeout        string `yaml:"timeout"`
+		MaxConcurrent  int    `yaml:"max_concurrent"`
+		MaxFileSize    int64  `yaml:"max_file_size"`
+		MaxRequestSize int64  `yaml:"max_request_size"`
 	} `yaml:"process"`
 	Pool struct {
 		Enabled  bool `yaml:"enabled"`
@@ -44,9 +45,10 @@ type ServerConfig struct {
 }
 
 type ProcessConfig struct {
-	Timeout       time.Duration
-	MaxConcurrent int
-	MaxFileSize   int64
+	Timeout        time.Duration
+	MaxConcurrent  int
+	MaxFileSize    int64
+	MaxRequestSize int64
 }
 
 type PoolConfig struct {
@@ -117,9 +119,10 @@ func convert(raw rawConfig) (Config, error) {
 			ShutdownTimeout:   shutdownTimeout,
 		},
 		Process: ProcessConfig{
-			Timeout:       processTimeout,
-			MaxConcurrent: raw.Process.MaxConcurrent,
-			MaxFileSize:   raw.Process.MaxFileSize,
+			Timeout:        processTimeout,
+			MaxConcurrent:  raw.Process.MaxConcurrent,
+			MaxFileSize:    raw.Process.MaxFileSize,
+			MaxRequestSize: raw.Process.MaxRequestSize,
 		},
 		Pool: PoolConfig{
 			Enabled:  raw.Pool.Enabled,
@@ -161,6 +164,12 @@ func validate(cfg Config) error {
 	}
 	if cfg.Process.MaxFileSize <= 0 {
 		return fmt.Errorf("process.max_file_size must be > 0")
+	}
+	if cfg.Process.MaxRequestSize <= 0 {
+		return fmt.Errorf("process.max_request_size must be > 0")
+	}
+	if cfg.Process.MaxRequestSize <= cfg.Process.MaxFileSize {
+		return fmt.Errorf("process.max_request_size must be > process.max_file_size to allow multipart overhead")
 	}
 	if cfg.Pool.Capacity <= 0 {
 		return fmt.Errorf("pool.capacity must be > 0")

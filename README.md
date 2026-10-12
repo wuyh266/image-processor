@@ -24,7 +24,19 @@ Go 图片处理服务，目前支持上传 JPEG/PNG 图片、按指定宽度等�
 go run ./cmd/server -config configs/config.yaml
 ```
 
-默认监听 `:8080`。配置位于 `configs/config.yaml`：当前文件上限 10 MiB、计算并发上限 4、处理 context 超时 15 秒。
+默认监听 `:8080`。配置位于 `configs/config.yaml`：当前请求体上限 11 MiB、单文件上限 10 MiB、计算并发上限 4、处理 context 超时 15 秒。
+
+上传大小配置如下，单位为字节：
+
+```yaml
+process:
+  max_file_size: 10485760
+  max_request_size: 11534336
+```
+
+`max_request_size` 限制 HTTP 请求体读取，包含文件、表单字段与 multipart 边界；它必须为正数并大于 `max_file_size`，给表单开销留空间。使用自己的配置文件时也需要添加这个必填项。请求体超限返回 `413 {"error":"request body too large"}`，单文件超限返回 `413 {"error":"file too large"}`，其他表单解析错误返回 400。
+
+服务在解析 multipart 之前检查已知请求长度，并通过 `http.MaxBytesReader` 限制实际读取，因此长度未知的 chunked 上传同样受限。`ParseMultipartForm(32 << 20)` 的内存阈值与请求体限制是不同参数。
 
 上传示例（将图片路径换成自己的文件）：
 
@@ -45,9 +57,11 @@ go build -o .bin/server ./cmd/server
 
 已有参数错误路径验证。新增基线验证覆盖真实 JPEG/PNG 的响应格式与等比输出尺寸，以及损坏图片；开启和关闭缓冲池分别验证。
 
+R1-1 验证覆盖请求体低于上限、恰好达到上限和超过上限，已知/未知长度、表单字段导致超限、400/413 的区分及统计。另有配置加载校验和通过真实 HTTP 连接执行的 Content-Length/chunked 超限场景。
+
 ## 已知边界
 
-- 文件上限在表单解析之后检查，请求体总大小和图片像素限制将在 R1 完善。
+- 请求体已在表单解析前限读；单文件上限仍在 Service 读取时检查，输入与输出像素限制将在后续 R1 完善。
 - 当前并发上限约束图片处理，上传解析和等待队列尚无完整的容量约束。
 - context 在等待计算名额时被检查；解码、缩放、编码调用不会自动因 context 超时立即停止。
 - 当前池化读取按最大文件大小申请缓冲区，分级池尚未接入；性能收益尚未测量。

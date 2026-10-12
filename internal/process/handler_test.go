@@ -16,7 +16,7 @@ import (
 func newTestHandler() http.HandlerFunc {
 	st := stats.New()
 	svc := NewService(2, 10<<20, false, st)
-	return NewResizeHandler(svc, 10*time.Second, st)
+	return NewResizeHandler(svc, 10*time.Second, 11<<20, st)
 }
 
 func TestResize_MethodNotAllowed(t *testing.T) {

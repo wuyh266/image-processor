@@ -40,7 +40,7 @@ func TestResize_RealImage(t *testing.T) {
 
 				st := stats.New()
 				svc := NewService(2, 10<<20, pooled, st)
-				handler := NewResizeHandler(svc, time.Second, st)
+				handler := NewResizeHandler(svc, time.Second, 11<<20, st)
 				rr := httptest.NewRecorder()
 				handler.ServeHTTP(rr, resizeImageRequest(t, encoded.Bytes(), "image/"+format, "40"))
 				if rr.Code != http.StatusOK {
@@ -69,7 +69,7 @@ func TestResize_CorruptImage(t *testing.T) {
 		t.Run(fmt.Sprintf("pool=%t", pooled), func(t *testing.T) {
 			st := stats.New()
 			svc := NewService(2, 10<<20, pooled, st)
-			handler := NewResizeHandler(svc, time.Second, st)
+			handler := NewResizeHandler(svc, time.Second, 11<<20, st)
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, resizeImageRequest(t, []byte("not an encoded image"), "image/png", "40"))
 			if rr.Code != http.StatusUnprocessableEntity {

@@ -11,7 +11,7 @@ import (
 	"image-processor/internal/stats"
 )
 
-func NewResizeHandler(svc *Service, timeout time.Duration, st *stats.Stats) http.HandlerFunc {
+func NewResizeHandler(svc *Service, timeout time.Duration, maxRequestSize int64, st *stats.Stats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		st.RecordRequest()
 
@@ -21,8 +21,19 @@ func NewResizeHandler(svc *Service, timeout time.Duration, st *stats.Stats) http
 			return
 		}
 
+		if r.ContentLength > maxRequestSize {
+			st.RecordError()
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
 		if err := r.ParseMultipartForm(32 << 20); err != nil {
 			st.RecordError()
+			var sizeErr *http.MaxBytesError
+			if errors.As(err, &sizeErr) {
+				writeJSONError(w, http.StatusRequestEntityTooLarge, "request body too large")
+				return
+			}
 			writeJSONError(w, http.StatusBadRequest, "invalid multipart form")
 			return
 		}

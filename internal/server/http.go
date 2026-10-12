@@ -31,7 +31,7 @@ func NewRouter(cfg config.Config, st *stats.Stats) http.Handler {
 		st,
 	)
 
-	mux.HandleFunc("/resize", process.NewResizeHandler(svc, cfg.Process.Timeout, st))
+	mux.HandleFunc("/resize", process.NewResizeHandler(svc, cfg.Process.Timeout, cfg.Process.MaxRequestSize, st))
 
 	mux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
